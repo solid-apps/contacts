@@ -1,0 +1,13 @@
+{
+  "name": "contacts — your Solid pod",
+  "short_name": "contacts",
+  "description": "Manage the contacts stored on your Solid pod.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f6f9",
+  "theme_color": "#2a3140",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
