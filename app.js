@@ -20,7 +20,7 @@ const loggedIn = () => !!(window.xlogin && window.xlogin.id)
 const pickerSupported = ('contacts' in navigator) && ('ContactsManager' in window)
 
 // --- vCard JSON-LD model ---
-function contactDoc({ fn, emails, tels, note }) {
+function contactDoc({ fn, emails, tels, note, webid }) {
   const doc = {
     '@context': { vcard: 'http://www.w3.org/2006/vcard/ns#' },
     '@type': 'vcard:Individual',
@@ -28,6 +28,9 @@ function contactDoc({ fn, emails, tels, note }) {
     'vcard:hasEmail': (emails || []).filter(Boolean),
     'vcard:hasTelephone': (tels || []).filter(Boolean)
   }
+  // WebID — the contact's Solid identity, used to message them (the inbox app
+  // resolves their ldp:inbox from it). Stored as vcard:url.
+  if (webid) doc['vcard:url'] = webid
   if (note) doc['vcard:note'] = note
   return doc
 }
@@ -37,10 +40,12 @@ function parseContact(doc) {
   const list = (v) => (v == null ? [] : (Array.isArray(v) ? v : [v]))
     .map((x) => (typeof x === 'string' ? x : (x['vcard:value'] || x.value || x['@value'] || '')))
     .filter(Boolean)
+  const one = (v) => (typeof v === 'string' ? v : (v && (v['@id'] || v['@value'] || v.value))) || ''
   return {
     fn: get('fn') || doc.fn || '',
     emails: list(get('hasEmail')).map((e) => e.replace(/^mailto:/i, '')),
     tels: list(get('hasTelephone')).map((t) => t.replace(/^tel:/i, '')),
+    webid: one(Array.isArray(get('url')) ? get('url')[0] : get('url')),
     note: get('note') || ''
   }
 }
@@ -167,6 +172,7 @@ function editor(existing) {
       <input class="f-fn"    placeholder="Name"                         value="${esc(c.fn)}">
       <input class="f-email" placeholder="Emails (comma-separated)"     value="${esc((c.emails || []).join(', '))}">
       <input class="f-tel"   placeholder="Phones (comma-separated)"     value="${esc((c.tels || []).join(', '))}">
+      <input class="f-webid" placeholder="WebID (https://…/profile/card#me)" value="${esc(c.webid || '')}">
       <textarea class="f-note" placeholder="Note" rows="2">${esc(c.note)}</textarea>
       <div class="form-actions">
         <button class="save">Save</button>
@@ -181,9 +187,10 @@ function editor(existing) {
       fn: wrap.querySelector('.f-fn').value.trim(),
       emails: splitList(wrap.querySelector('.f-email').value),
       tels: splitList(wrap.querySelector('.f-tel').value),
+      webid: wrap.querySelector('.f-webid').value.trim(),
       note: wrap.querySelector('.f-note').value.trim()
     }
-    if (!data.fn && !data.emails.length && !data.tels.length) { toast('Add a name, email or phone'); return }
+    if (!data.fn && !data.emails.length && !data.tels.length && !data.webid) { toast('Add a name, email, phone or WebID'); return }
     e.currentTarget.disabled = true
     try {
       await saveContact(data, existing && existing.url)
@@ -204,6 +211,7 @@ function contactCard(c) {
       <div class="name">${esc(c.fn || '(no name)')}</div>
       ${c.emails.map((e) => `<a class="line" href="mailto:${esc(e)}">${esc(e)}</a>`).join('')}
       ${c.tels.map((t) => `<a class="line" href="tel:${esc(t)}">${esc(t)}</a>`).join('')}
+      ${c.webid ? `<a class="line webid" href="${esc(c.webid)}" title="WebID">⬡ ${esc(c.webid)}</a>` : ''}
       ${c.note ? `<div class="line note">${esc(c.note)}</div>` : ''}
     </div>
     <div class="actions">
