@@ -215,9 +215,12 @@ function contactCard(c) {
       ${c.note ? `<div class="line note">${esc(c.note)}</div>` : ''}
     </div>
     <div class="actions">
+      ${c.webid ? '<button class="msg" title="Message">Message</button>' : ''}
       <button class="edit ghost" title="Edit">Edit</button>
       <button class="del ghost danger" title="Remove">Remove</button>
     </div>`
+  const msgBtn = row.querySelector('.msg')
+  if (msgBtn) msgBtn.onclick = () => { location.href = '../messages/?to=' + encodeURIComponent(c.webid) }
   row.querySelector('.edit').onclick = () => { row.replaceWith(editor(c)) }
   row.querySelector('.del').onclick = async () => {
     if (!loggedIn()) { toast('Sign in first (login pill, bottom-right)'); return }
