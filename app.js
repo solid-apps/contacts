@@ -220,7 +220,13 @@ function contactCard(c) {
       <button class="del ghost danger" title="Remove">Remove</button>
     </div>`
   const msgBtn = row.querySelector('.msg')
-  if (msgBtn) msgBtn.onclick = () => { location.href = '../messages/?to=' + encodeURIComponent(c.webid) }
+  if (msgBtn) msgBtn.onclick = () => {
+    // Open this person (a webid) via the intent bus — any app that handles
+    // webid appears in the chooser. Falls back to messages directly if the bus
+    // isn't loaded.
+    if (window.intent) window.intent.open('webid', c.webid, c.fn)
+    else location.href = '../messages/?to=' + encodeURIComponent(c.webid)
+  }
   row.querySelector('.edit').onclick = () => { row.replaceWith(editor(c)) }
   row.querySelector('.del').onclick = async () => {
     if (!loggedIn()) { toast('Sign in first (login pill, bottom-right)'); return }
